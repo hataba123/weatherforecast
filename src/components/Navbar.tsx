@@ -77,7 +77,7 @@ export function Navbar({
       {/* Top Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/25 bg-white/15 px-4 py-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur-2xl sm:px-6 sm:py-3">
         {/* Brand */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-tr from-sky-400 to-blue-600 text-white shadow-md shadow-sky-500/25">
             <svg
               className="h-5 w-5"
@@ -94,17 +94,17 @@ export function Navbar({
             </svg>
           </div>
           <div>
-            <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/75">
-              iOS Weather
+            <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-sky-200/90">
+              Thời tiết Việt Nam
             </span>
-            <p className="font-display text-base font-semibold leading-tight text-white drop-shadow">
+            <p className="font-display text-base font-semibold leading-tight text-white drop-shadow sm:text-lg">
               Dự báo Thời tiết
             </p>
           </div>
         </div>
 
         {/* Action controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* GPS Button */}
           <button
             type="button"

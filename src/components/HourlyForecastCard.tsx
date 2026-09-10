@@ -43,7 +43,7 @@ export function HourlyForecastCard({ hourly, unit }: HourlyForecastCardProps) {
           return (
             <div
               key={item.isoTime || index}
-              className={`flex min-w-[4.25rem] flex-col items-center justify-between gap-3 rounded-2xl p-2.5 transition-all duration-200 snap-start ${
+              className={`flex shrink-0 min-w-[4.25rem] sm:min-w-[4.5rem] flex-col items-center justify-between gap-3 rounded-2xl p-2.5 transition-all duration-200 snap-start ${
                 isNow ? 'bg-white/20 shadow-inner' : 'hover:bg-white/10'
               }`}
             >

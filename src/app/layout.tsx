@@ -20,12 +20,12 @@ const codeFont = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "WeatherForecast - Dự báo Thời tiết Chuẩn iOS",
+    default: "WeatherForecast - Dự báo Thời tiết Real-time",
     template: "%s | WeatherForecast",
   },
-  description: "Ứng dụng dự báo thời tiết thời gian thực phong cách Apple iOS mượt mà, chính xác và đầy đủ các chỉ số khí quyển.",
+  description: "Ứng dụng dự báo thời tiết thời gian thực mượt mà, chính xác và đầy đủ các chỉ số khí quyển.",
   applicationName: "WeatherForecast",
-  keywords: ["weather", "forecast", "dự báo thời tiết", "thời tiết việt nam", "ios weather"],
+  keywords: ["weather", "forecast", "dự báo thời tiết", "thời tiết việt nam"],
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

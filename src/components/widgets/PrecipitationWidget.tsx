@@ -12,7 +12,7 @@ export function PrecipitationWidget({
   rainProbabilityMax,
 }: PrecipitationWidgetProps) {
   return (
-    <div className="flex flex-col justify-between rounded-[2rem] border border-white/20 bg-white/15 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all duration-300 hover:bg-white/20">
+    <div className="flex h-full flex-col justify-between rounded-[2rem] border border-white/20 bg-white/15 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all duration-300 hover:bg-white/20">
       <div>
         {/* Header */}
         <div className="flex items-center gap-2 text-white/70">

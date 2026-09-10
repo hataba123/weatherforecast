@@ -20,8 +20,10 @@ import { UVWidget } from '../components/widgets/UVWidget';
 import { WindWidget } from '../components/widgets/WindWidget';
 import { SunWidget } from '../components/widgets/SunWidget';
 import { HumidityWidget } from '../components/widgets/HumidityWidget';
-import { AtmosphereWidget } from '../components/widgets/AtmosphereWidget';
+import { VisibilityWidget } from '../components/widgets/VisibilityWidget';
+import { PressureWidget } from '../components/widgets/PressureWidget';
 import { PrecipitationWidget } from '../components/widgets/PrecipitationWidget';
+import { SummaryWidget } from '../components/widgets/SummaryWidget';
 
 export default function Home() {
   const [currentLocation, setCurrentLocation] = useState<LocationData>(POPULAR_LOCATIONS[0]);
@@ -161,7 +163,7 @@ export default function Home() {
     <main
       className={`relative min-h-screen w-full bg-gradient-to-b ${gradientClass} transition-colors duration-1000 ease-in-out text-white overflow-hidden pb-12`}
     >
-      {/* iOS Ambient Light Glows */}
+      {/* Ambient Light Glows */}
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[450px] w-[700px] rounded-full bg-white/10 blur-[100px]" />
       <div className="pointer-events-none absolute top-1/3 -right-24 h-96 w-96 rounded-full bg-sky-400/15 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-1/4 -left-24 h-96 w-96 rounded-full bg-indigo-500/15 blur-[120px]" />
@@ -193,7 +195,7 @@ export default function Home() {
 
         {/* Main Weather Content */}
         {isLoading && !weatherData ? (
-          /* iOS-style Skeleton Loader */
+          /* Shimmer Skeleton Loader */
           <div className="mt-8 flex flex-1 flex-col items-center justify-center animate-pulse gap-6">
             <div className="h-8 w-48 rounded-full bg-white/20" />
             <div className="h-28 w-52 rounded-3xl bg-white/20" />
@@ -235,82 +237,68 @@ export default function Home() {
             />
 
             {/* Responsive Forecast & Bento Grid */}
-            <div className="mt-6 grid flex-1 gap-6 xl:grid-cols-[1.25fr_1fr]">
-              {/* Left Column: 24h Hourly & Bento Grid */}
-              <div className="flex flex-col gap-6">
-                {/* 24h Hourly Slider */}
-                <HourlyForecastCard hourly={weatherData.hourly} unit={unit} />
+            <div className="mt-6 flex flex-col gap-6">
+              {/* 24h Hourly Forecast Slider (Full Width) */}
+              <HourlyForecastCard hourly={weatherData.hourly} unit={unit} />
 
-                {/* iOS Bento Grid: Air & Environmental Metrics */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <UVWidget uvIndex={weatherData.current.uvIndex} />
-                  <WindWidget
-                    windSpeed={weatherData.current.windSpeed}
-                    windDirection={weatherData.current.windDirection}
+              {/* Responsive 2-Column Desktop Grid / Stacked on Mobile */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                {/* 7-Day Forecast Column */}
+                <div className="flex flex-col gap-6 lg:col-span-5">
+                  <DailyForecastCard
+                    daily={weatherData.daily}
+                    weekMinTemp={weatherData.weekMinTemp}
+                    weekMaxTemp={weatherData.weekMaxTemp}
+                    currentTemp={weatherData.current.temperature}
+                    unit={unit}
                   />
-                  <SunWidget
-                    sunrise={weatherData.daily[0]?.sunrise || '05:45'}
-                    sunset={weatherData.daily[0]?.sunset || '17:58'}
-                  />
-                  <HumidityWidget
-                    humidity={weatherData.current.relativeHumidity}
-                    dewPoint={weatherData.current.dewPoint}
-                  />
+
+                  {/* Summary Card under 7-day forecast on desktop */}
+                  <div className="hidden lg:block">
+                    <SummaryWidget
+                      condition={weatherData.condition}
+                      current={weatherData.current}
+                      lastUpdated={weatherData.lastUpdated}
+                    />
+                  </div>
                 </div>
 
-                {/* Visibility & Atmospheric Pressure */}
-                <AtmosphereWidget
-                  visibilityKm={weatherData.current.visibilityKm}
-                  pressureHpa={weatherData.current.surfacePressure}
-                />
-
-                {/* Rain & Precipitation */}
-                <PrecipitationWidget
-                  precipitationMm={weatherData.daily[0]?.precipitationSum ?? 0}
-                  rainProbabilityMax={
-                    weatherData.daily[0]?.precipitationProbability ?? 0
-                  }
-                />
-              </div>
-
-              {/* Right Column: 7-Day Forecast */}
-              <div className="flex flex-col gap-6">
-                <DailyForecastCard
-                  daily={weatherData.daily}
-                  weekMinTemp={weatherData.weekMinTemp}
-                  weekMaxTemp={weatherData.weekMaxTemp}
-                  currentTemp={weatherData.current.temperature}
-                  unit={unit}
-                />
-
-                {/* iOS Air Quality & Comfort Insight Card */}
-                <div className="rounded-[2rem] border border-white/20 bg-white/15 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur-2xl">
-                  <div className="flex items-center gap-2 text-white/70">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-                      Đánh giá tổng quan
-                    </span>
-                  </div>
-                  <h3 className="mt-3 font-display text-xl font-semibold text-white">
-                    {weatherData.condition.label}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-white/85">
-                    {weatherData.condition.description}. Độ ẩm không khí ở mức{' '}
-                    {weatherData.current.relativeHumidity}%, gió thổi với tốc độ{' '}
-                    {Math.round(weatherData.current.windSpeed)} km/h. Thích hợp cho các kế hoạch sinh hoạt và di chuyển.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-white/20 px-3 py-1 font-medium backdrop-blur-md">
-                      Tầm nhìn: {weatherData.current.visibilityKm} km
-                    </span>
-                    <span className="rounded-full bg-white/20 px-3 py-1 font-medium backdrop-blur-md">
-                      Áp suất: {weatherData.current.surfacePressure} hPa
-                    </span>
-                    <span className="rounded-full bg-white/20 px-3 py-1 font-medium backdrop-blur-md">
-                      Cập nhật: {weatherData.lastUpdated}
-                    </span>
+                {/* Bento Grid: 7 or 8 atmospheric metric cards */}
+                <div className="lg:col-span-7">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <UVWidget uvIndex={weatherData.current.uvIndex} />
+                    <WindWidget
+                      windSpeed={weatherData.current.windSpeed}
+                      windDirection={weatherData.current.windDirection}
+                    />
+                    <SunWidget
+                      sunrise={weatherData.daily[0]?.sunrise || '05:45'}
+                      sunset={weatherData.daily[0]?.sunset || '17:58'}
+                    />
+                    <HumidityWidget
+                      humidity={weatherData.current.relativeHumidity}
+                      dewPoint={weatherData.current.dewPoint}
+                    />
+                    <VisibilityWidget
+                      visibilityKm={weatherData.current.visibilityKm}
+                    />
+                    <PressureWidget
+                      pressureHpa={weatherData.current.surfacePressure}
+                    />
+                    <PrecipitationWidget
+                      precipitationMm={weatherData.daily[0]?.precipitationSum ?? 0}
+                      rainProbabilityMax={
+                        weatherData.daily[0]?.precipitationProbability ?? 0
+                      }
+                    />
+                    {/* On mobile / tablet, show SummaryWidget as 8th card of bento grid */}
+                    <div className="lg:hidden">
+                      <SummaryWidget
+                        condition={weatherData.condition}
+                        current={weatherData.current}
+                        lastUpdated={weatherData.lastUpdated}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -318,14 +306,14 @@ export default function Home() {
           </>
         ) : null}
 
-        {/* Apple iOS Clean Footer */}
+        {/* Clean Modern Footer */}
         <footer className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 text-xs text-white/70 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             <span>Thời tiết trực tuyến thời gian thực</span>
           </div>
           <div>
-            Dữ liệu cung cấp bởi Open-Meteo • Thiết kế phong cách Apple iOS
+            Dữ liệu cung cấp bởi Open-Meteo • Cập nhật tự động liên tục
           </div>
         </footer>
       </div>

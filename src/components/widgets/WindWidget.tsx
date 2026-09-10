@@ -12,7 +12,7 @@ export function WindWidget({ windSpeed, windDirection }: WindWidgetProps) {
   const { label, angle } = getWindDirection(windDirection);
 
   return (
-    <div className="flex flex-col justify-between rounded-[2rem] border border-white/20 bg-white/15 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all duration-300 hover:bg-white/20">
+    <div className="flex h-full flex-col justify-between rounded-[2rem] border border-white/20 bg-white/15 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all duration-300 hover:bg-white/20">
       <div>
         {/* Header */}
         <div className="flex items-center gap-2 text-white/70">
@@ -39,7 +39,7 @@ export function WindWidget({ windSpeed, windDirection }: WindWidgetProps) {
           </div>
 
           {/* Compass Dial */}
-          <div className="relative h-18 w-18 place-items-center rounded-full border border-white/30 bg-black/20 p-1 backdrop-blur-sm grid">
+          <div className="relative h-16 w-16 shrink-0 place-items-center rounded-full border border-white/30 bg-black/20 p-1 backdrop-blur-sm grid">
             <span className="absolute top-1 text-[0.6rem] font-bold text-white/60">B</span>
             <span className="absolute right-1 text-[0.6rem] font-bold text-white/60">Đ</span>
             <span className="absolute bottom-1 text-[0.6rem] font-bold text-white/60">N</span>

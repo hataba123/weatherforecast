@@ -73,57 +73,61 @@ export function DailyForecastCard({
           return (
             <div
               key={day.date}
-              className="grid grid-cols-[3.8rem_2.8rem_1fr] items-center gap-2 py-3 transition-colors duration-150 hover:bg-white/5 sm:grid-cols-[5rem_3.5rem_1fr] sm:gap-4 sm:px-2 rounded-xl"
+              className="grid grid-cols-[3.5rem_2.5rem_1fr] items-center gap-2 py-3 transition-colors duration-150 hover:bg-white/5 sm:grid-cols-[4.5rem_3.5rem_1fr] sm:gap-3 sm:px-2 rounded-xl"
             >
               {/* Day Name */}
-              <div className="flex flex-col">
-                <span className={`text-sm font-semibold ${isToday ? 'text-white' : 'text-white/90'}`}>
+              <div className="flex flex-col min-w-0">
+                <span className={`text-xs sm:text-sm font-semibold truncate ${isToday ? 'text-white font-bold' : 'text-white/90'}`}>
                   {day.dayLabel}
                 </span>
-                <span className="text-[0.7rem] text-white/60">{day.fullDateLabel}</span>
+                <span className="text-[0.65rem] sm:text-[0.7rem] text-white/60">{day.fullDateLabel}</span>
               </div>
 
               {/* Weather Icon & Rain */}
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center shrink-0">
                 <WeatherIcon type={condition.iconType} size={26} />
-                {day.precipitationProbability > 20 && (
+                {day.precipitationProbability > 20 ? (
                   <span className="text-[0.65rem] font-bold text-sky-200">
                     {day.precipitationProbability}%
                   </span>
+                ) : (
+                  <span className="h-3 text-[0.65rem] opacity-0">-</span>
                 )}
               </div>
 
-              {/* iOS-style Temperature Range Bar */}
-              <div className="flex items-center gap-2 sm:gap-3">
+              {/* Temperature Range Bar */}
+              <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
                 {/* Min Temp */}
-                <span className="w-8 text-right font-display text-sm font-medium text-white/70">
+                <span className="w-7 sm:w-8 shrink-0 text-right font-display text-xs sm:text-sm font-medium text-white/70">
                   {formatTemp(day.tempMin, unit)}
                 </span>
 
                 {/* Progress Bar Container */}
-                <div className="relative h-1.5 flex-1 rounded-full bg-black/25 overflow-hidden">
-                  {/* Colored Active Segment */}
-                  <div
-                    className="absolute top-0 h-full rounded-full bg-gradient-to-r from-sky-400 via-amber-300 to-orange-400"
-                    style={{
-                      left: `${leftPercent}%`,
-                      width: `${barWidthPercent}%`,
-                    }}
-                  />
+                <div className="relative h-2 flex-1 rounded-full bg-black/30">
+                  <div className="absolute inset-0 overflow-hidden rounded-full">
+                    {/* Colored Active Segment */}
+                    <div
+                      className="absolute top-0 h-full rounded-full bg-gradient-to-r from-sky-400 via-amber-300 to-orange-400"
+                      style={{
+                        left: `${leftPercent}%`,
+                        width: `${barWidthPercent}%`,
+                      }}
+                    />
+                  </div>
 
                   {/* Current Temp indicator for Today */}
                   {currentTempPercent !== null && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full border-2 border-slate-900 bg-white shadow"
+                      className="absolute top-1/2 -translate-y-1/2 h-3.5 w-3.5 rounded-full border-2 border-slate-900 bg-white shadow-md z-10"
                       style={{
-                        left: `calc(${currentTempPercent}% - 5px)`,
+                        left: `calc(${currentTempPercent}% - 7px)`,
                       }}
                     />
                   )}
                 </div>
 
                 {/* Max Temp */}
-                <span className="w-8 text-left font-display text-sm font-semibold text-white">
+                <span className="w-7 sm:w-8 shrink-0 text-left font-display text-xs sm:text-sm font-semibold text-white">
                   {formatTemp(day.tempMax, unit)}
                 </span>
               </div>
