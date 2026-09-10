@@ -1,409 +1,332 @@
-const currentMetrics = [
-  {
-    label: "Cảm giác như",
-    value: "36°",
-    note: "Nhiệt độ cảm nhận ở khu vực trung tâm",
-  },
-  {
-    label: "Độ ẩm",
-    value: "68%",
-    note: "Không khí còn giữ ẩm sau buổi sáng",
-  },
-  {
-    label: "Gió",
-    value: "14 km/h",
-    note: "Hướng đông nam, ổn định cho di chuyển",
-  },
-  {
-    label: "Xác suất mưa",
-    value: "18%",
-    note: "Khả năng xuất hiện mưa rào nhẹ",
-  },
-] as const;
+'use client';
 
-const hourlyForecast = [
-  {
-    time: "08:00",
-    temp: "26°",
-    rain: "5%",
-    fill: "22%",
-  },
-  {
-    time: "11:00",
-    temp: "30°",
-    rain: "12%",
-    fill: "54%",
-  },
-  {
-    time: "14:00",
-    temp: "33°",
-    rain: "18%",
-    fill: "100%",
-  },
-  {
-    time: "17:00",
-    temp: "31°",
-    rain: "24%",
-    fill: "72%",
-  },
-  {
-    time: "20:00",
-    temp: "28°",
-    rain: "10%",
-    fill: "40%",
-  },
-] as const;
-
-const dailyForecast = [
-  {
-    day: "T2",
-    summary: "Nắng nhẹ",
-    note: "Gió nam, trời khô",
-    high: "32°",
-    low: "26°",
-  },
-  {
-    day: "T3",
-    summary: "Mây rải rác",
-    note: "Chiều dịu hơn",
-    high: "33°",
-    low: "26°",
-  },
-  {
-    day: "T4",
-    summary: "Mưa rào nhẹ",
-    note: "Khả năng mưa buổi tối",
-    high: "31°",
-    low: "25°",
-  },
-  {
-    day: "T5",
-    summary: "Trời quang",
-    note: "Ánh nắng rõ hơn",
-    high: "30°",
-    low: "25°",
-  },
-  {
-    day: "T6",
-    summary: "Nhiều mây",
-    note: "Độ ẩm tăng",
-    high: "29°",
-    low: "24°",
-  },
-  {
-    day: "T7",
-    summary: "Nắng đan mây",
-    note: "Ổn định cho cuối tuần",
-    high: "30°",
-    low: "24°",
-  },
-  {
-    day: "CN",
-    summary: "Dễ chịu",
-    note: "Biến động thấp",
-    high: "31°",
-    low: "25°",
-  },
-] as const;
-
-const releaseSignals = [
-  {
-    title: "Responsive gọn",
-    detail: "Layout giữ nhịp tốt trên mobile, tablet và màn hình lớn.",
-  },
-  {
-    title: "Dễ nối API",
-    detail: "Mỗi cụm dữ liệu đã tách riêng để thay bằng nguồn thật sau này.",
-  },
-  {
-    title: "Sẵn cho branding",
-    detail: "Màu nền, thẻ và typography đã đi theo một hướng rõ ràng.",
-  },
-] as const;
-
-const launchNotes = [
-  {
-    title: "SEO sẵn",
-    detail: "Metadata và title đã được cấu hình cho trang gốc.",
-  },
-  {
-    title: "Khung dữ liệu",
-    detail: "Các khối hiển thị đã tách đủ để gắn dữ liệu vị trí.",
-  },
-  {
-    title: "Giao diện ổn",
-    detail: "Đủ tinh gọn để chốt bản phát hành đầu tiên.",
-  },
-] as const;
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  LocationData,
+  TemperatureUnit,
+  WeatherData,
+} from '../types/weather';
+import {
+  POPULAR_LOCATIONS,
+  fetchWeatherForecast,
+  reverseGeocode,
+} from '../services/weatherApi';
+import { Navbar } from '../components/Navbar';
+import { WeatherHero } from '../components/WeatherHero';
+import { HourlyForecastCard } from '../components/HourlyForecastCard';
+import { DailyForecastCard } from '../components/DailyForecastCard';
+import { FavoritesBar } from '../components/FavoritesBar';
+import { UVWidget } from '../components/widgets/UVWidget';
+import { WindWidget } from '../components/widgets/WindWidget';
+import { SunWidget } from '../components/widgets/SunWidget';
+import { HumidityWidget } from '../components/widgets/HumidityWidget';
+import { AtmosphereWidget } from '../components/widgets/AtmosphereWidget';
+import { PrecipitationWidget } from '../components/widgets/PrecipitationWidget';
 
 export default function Home() {
+  const [currentLocation, setCurrentLocation] = useState<LocationData>(POPULAR_LOCATIONS[0]);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [unit, setUnit] = useState<TemperatureUnit>('C');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isLoadingGps, setIsLoadingGps] = useState<boolean>(false);
+  const [favorites, setFavorites] = useState<LocationData[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Restore favorites and unit from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedUnit = localStorage.getItem('weather_unit') as TemperatureUnit;
+      if (savedUnit === 'C' || savedUnit === 'F') {
+        setUnit(savedUnit);
+      }
+
+      const savedFavs = localStorage.getItem('weather_favorites');
+      if (savedFavs) {
+        setFavorites(JSON.parse(savedFavs));
+      }
+
+      const savedLastLocation = localStorage.getItem('weather_last_location');
+      if (savedLastLocation) {
+        setCurrentLocation(JSON.parse(savedLastLocation));
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  // Fetch weather data for the current location
+  const loadWeather = useCallback(async (loc: LocationData, isManualRefresh = false) => {
+    if (isManualRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+    setErrorMessage(null);
+
+    try {
+      const data = await fetchWeatherForecast(loc);
+      setWeatherData(data);
+      // Persist last selected location
+      try {
+        localStorage.setItem('weather_last_location', JSON.stringify(loc));
+      } catch {
+        // Ignore
+      }
+    } catch (err) {
+      console.error('Failed to load weather:', err);
+      setErrorMessage('Không thể tải dữ liệu thời tiết. Vui lòng kiểm tra kết nối mạng và thử lại.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // Initial fetch and on location change
+  useEffect(() => {
+    loadWeather(currentLocation);
+  }, [currentLocation, loadWeather]);
+
+  // Handle unit switch
+  const handleToggleUnit = () => {
+    const nextUnit: TemperatureUnit = unit === 'C' ? 'F' : 'C';
+    setUnit(nextUnit);
+    try {
+      localStorage.setItem('weather_unit', nextUnit);
+    } catch {
+      // Ignore
+    }
+  };
+
+  // Handle location selection
+  const handleSelectLocation = (loc: LocationData) => {
+    setCurrentLocation(loc);
+  };
+
+  // Handle GPS Geolocation
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
+      return;
+    }
+
+    setIsLoadingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        try {
+          const loc = await reverseGeocode(lat, lon);
+          setCurrentLocation(loc);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsLoadingGps(false);
+        }
+      },
+      (error) => {
+        console.warn('Geolocation error:', error);
+        setIsLoadingGps(false);
+        alert('Không thể truy cập định vị GPS. Vui lòng cho phép quyền vị trí trong trình duyệt.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
+  // Handle favorite toggling
+  const handleToggleFavorite = (loc: LocationData) => {
+    const exists = favorites.some((f) => f.name === loc.name);
+    let updated: LocationData[];
+    if (exists) {
+      updated = favorites.filter((f) => f.name !== loc.name);
+    } else {
+      updated = [...favorites, loc];
+    }
+    setFavorites(updated);
+    try {
+      localStorage.setItem('weather_favorites', JSON.stringify(updated));
+    } catch {
+      // Ignore
+    }
+  };
+
+  const isCurrentFavorite = favorites.some((f) => f.name === currentLocation.name);
+
+  // Background gradient dynamic styling
+  const gradientClass = weatherData?.condition?.theme?.bgGradient
+    ? weatherData.condition.theme.bgGradient
+    : 'from-sky-600 via-blue-700 to-indigo-900';
+
   return (
-    <main className="relative isolate overflow-hidden">
-      <div className="absolute inset-0 -z-20 bg-[#edf5ff]" />
-      <div className="absolute inset-x-0 top-0 -z-10 h-[36rem] bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.26),transparent_38%),radial-gradient(circle_at_top_right,rgba(250,204,21,0.18),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.7),rgba(255,255,255,0))]" />
-      <div className="absolute right-[-6rem] top-28 -z-10 h-72 w-72 rounded-full bg-sky-300/20 blur-3xl" />
-      <div className="absolute left-[-5rem] top-72 -z-10 h-72 w-72 rounded-full bg-amber-200/20 blur-3xl" />
+    <main
+      className={`relative min-h-screen w-full bg-gradient-to-b ${gradientClass} transition-colors duration-1000 ease-in-out text-white overflow-hidden pb-12`}
+    >
+      {/* iOS Ambient Light Glows */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[450px] w-[700px] rounded-full bg-white/10 blur-[100px]" />
+      <div className="pointer-events-none absolute top-1/3 -right-24 h-96 w-96 rounded-full bg-sky-400/15 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-1/4 -left-24 h-96 w-96 rounded-full bg-indigo-500/15 blur-[120px]" />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-8 pt-4 sm:px-6 lg:px-8 lg:pt-6">
-        <header className="mb-6 flex items-center justify-between gap-4 rounded-full border border-white/70 bg-white/75 px-5 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-full bg-slate-950 text-sm font-semibold tracking-[0.25em] text-white shadow-lg shadow-slate-900/15">
-              WF
-            </div>
-            <div>
-              <p className="text-[0.65rem] uppercase tracking-[0.4em] text-slate-500">
-                WeatherForecast
-              </p>
-              <p className="font-display text-lg text-slate-950">
-                Khung dự báo thời tiết
-              </p>
-            </div>
-          </div>
+      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+        {/* Navigation Bar */}
+        <Navbar
+          currentLocation={currentLocation}
+          onSelectLocation={handleSelectLocation}
+          onUseCurrentLocation={handleUseCurrentLocation}
+          isLoadingLocation={isLoadingGps}
+          unit={unit}
+          onToggleUnit={handleToggleUnit}
+          onRefresh={() => loadWeather(currentLocation, true)}
+          isRefreshing={isRefreshing}
+          lastUpdated={weatherData?.lastUpdated || ''}
+        />
 
-          <div className="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 md:flex">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            Sẵn sàng phát hành bản đầu
-          </div>
-        </header>
-
-        <div className="grid flex-1 gap-6 xl:grid-cols-[1.25fr_0.95fr]">
-          <section className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-6">
-            <div className="pointer-events-none absolute -right-12 top-0 h-44 w-44 rounded-full bg-sky-300/30 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-10 left-0 h-40 w-40 rounded-full bg-amber-200/30 blur-3xl" />
-
-            <div className="relative">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="max-w-2xl">
-                  <p className="text-xs uppercase tracking-[0.35em] text-slate-500">
-                    Tổng quan hiện tại
-                  </p>
-                  <h1 className="mt-3 font-display text-4xl leading-none text-slate-950 sm:text-5xl lg:text-6xl">
-                    TP. Hồ Chí Minh
-                  </h1>
-                  <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600 sm:text-base">
-                    Bộ khung giao diện cho trang dự báo: đủ gọn để phát hành bản đầu, đủ rõ để gắn dữ liệu thời tiết thật sau này.
-                  </p>
-                </div>
-
-                <div className="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-700">
-                  Cập nhật 5 phút trước
-                </div>
-              </div>
-
-              <div className="mt-8 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                <div className="rounded-[1.75rem] bg-[linear-gradient(135deg,#0284c7_0%,#0891b2_55%,#2563eb_100%)] p-6 text-white shadow-[0_24px_50px_rgba(14,165,233,0.32)]">
-                  <p className="text-xs uppercase tracking-[0.35em] text-white/70">
-                    Điều kiện hiện tại
-                  </p>
-
-                  <div className="mt-6 flex items-end gap-4">
-                    <div className="font-display text-7xl leading-none sm:text-8xl">
-                      31°
-                    </div>
-                    <div className="pb-2">
-                      <p className="text-xl font-semibold">Nắng xen mây</p>
-                      <p className="mt-1 text-sm text-white/85">
-                        Gió nhẹ • Tầm nhìn 12 km
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-white/12 p-4 backdrop-blur-sm">
-                      <p className="text-xs uppercase tracking-[0.3em] text-white/65">
-                        Độ ẩm
-                      </p>
-                      <p className="mt-2 font-display text-2xl">68%</p>
-                      <p className="mt-1 text-xs text-white/65">
-                        Không khí còn giữ ẩm
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white/12 p-4 backdrop-blur-sm">
-                      <p className="text-xs uppercase tracking-[0.3em] text-white/65">
-                        Tầm nhìn
-                      </p>
-                      <p className="mt-2 font-display text-2xl">12 km</p>
-                      <p className="mt-1 text-xs text-white/65">
-                        Phù hợp cho di chuyển
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap gap-2 text-xs text-sky-50/90">
-                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">
-                      UV 7
-                    </span>
-                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">
-                      AQI 58
-                    </span>
-                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1">
-                      Áp suất 1007 hPa
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                  {currentMetrics.map((metric) => (
-                    <div
-                      key={metric.label}
-                      className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
-                    >
-                      <p className="text-sm text-slate-500">{metric.label}</p>
-                      <p className="mt-3 font-display text-3xl text-slate-950">
-                        {metric.value}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-slate-500">
-                        {metric.note}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <aside className="grid gap-6">
-            <section className="rounded-[2rem] border border-slate-900/5 bg-slate-950 p-6 text-white shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
-              <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">
-                Khung phát hành
-              </p>
-              <h2 className="mt-3 font-display text-3xl text-white">
-                Sẵn sàng gắn dữ liệu thật
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-slate-300">
-                Mọi khối thông tin đã được tách rõ, giúp thay API, cache hay route mà không phải đụng toàn bộ trang.
-              </p>
-
-              <ul className="mt-6 space-y-3">
-                {releaseSignals.map((signal) => (
-                  <li
-                    key={signal.title}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                  >
-                    <p className="font-medium text-white">{signal.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-300">
-                      {signal.detail}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/70 bg-white/75 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-500">
-                Mốc quan trọng
-              </p>
-              <h2 className="mt-3 font-display text-2xl text-slate-950">
-                Chuẩn bị cho bản phát hành đầu
-              </h2>
-
-              <div className="mt-6 grid gap-3">
-                {launchNotes.map((note) => (
-                  <div
-                    key={note.title}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <p className="font-medium text-slate-950">{note.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                      {note.detail}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside>
+        {/* Favorites Bar */}
+        <div className="mt-3">
+          <FavoritesBar
+            favorites={favorites}
+            currentLocation={currentLocation}
+            onSelectLocation={handleSelectLocation}
+            onToggleFavorite={handleToggleFavorite}
+            isCurrentFavorite={isCurrentFavorite}
+          />
         </div>
 
-        <section className="mt-6 grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-          <article className="rounded-[2rem] border border-white/70 bg-white/75 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-slate-500">
-                  Dự báo theo giờ
-                </p>
-                <h2 className="mt-2 font-display text-2xl text-slate-950">
-                  24 giờ tới
-                </h2>
-              </div>
-
-              <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white">
-                Kết cấu ổn định
-              </span>
+        {/* Main Weather Content */}
+        {isLoading && !weatherData ? (
+          /* iOS-style Skeleton Loader */
+          <div className="mt-8 flex flex-1 flex-col items-center justify-center animate-pulse gap-6">
+            <div className="h-8 w-48 rounded-full bg-white/20" />
+            <div className="h-28 w-52 rounded-3xl bg-white/20" />
+            <div className="h-6 w-36 rounded-full bg-white/20" />
+            <div className="h-40 w-full rounded-[2rem] bg-white/15 backdrop-blur-md" />
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="h-44 rounded-[2rem] bg-white/15 backdrop-blur-md" />
+              <div className="h-44 rounded-[2rem] bg-white/15 backdrop-blur-md" />
             </div>
+          </div>
+        ) : errorMessage ? (
+          /* Error Screen */
+          <div className="my-auto flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-[2.5rem] border border-white/20 bg-white/15 p-8 shadow-2xl backdrop-blur-2xl max-w-md">
+              <span className="text-5xl">⚠️</span>
+              <h2 className="mt-4 font-display text-2xl font-semibold text-white">
+                Không thể kết nối
+              </h2>
+              <p className="mt-2 text-sm text-white/80">{errorMessage}</p>
+              <button
+                type="button"
+                onClick={() => loadWeather(currentLocation)}
+                className="mt-6 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-slate-900 shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                Thử lại ngay
+              </button>
+            </div>
+          </div>
+        ) : weatherData ? (
+          <>
+            {/* Hero Weather Section */}
+            <WeatherHero
+              location={weatherData.location}
+              current={weatherData.current}
+              condition={weatherData.condition}
+              tempMax={weatherData.daily[0]?.tempMax ?? weatherData.current.temperature}
+              tempMin={weatherData.daily[0]?.tempMin ?? weatherData.current.temperature}
+              unit={unit}
+            />
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              {hourlyForecast.map((slot) => (
-                <div
-                  key={slot.time}
-                  className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4 transition-transform duration-200 hover:-translate-y-0.5"
-                >
-                  <p className="text-sm font-medium text-slate-500">{slot.time}</p>
-                  <p className="mt-4 font-display text-3xl text-slate-950">
-                    {slot.temp}
-                  </p>
+            {/* Responsive Forecast & Bento Grid */}
+            <div className="mt-6 grid flex-1 gap-6 xl:grid-cols-[1.25fr_1fr]">
+              {/* Left Column: 24h Hourly & Bento Grid */}
+              <div className="flex flex-col gap-6">
+                {/* 24h Hourly Slider */}
+                <HourlyForecastCard hourly={weatherData.hourly} unit={unit} />
 
-                  <div className="mt-4 h-2 rounded-full bg-slate-200">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400"
-                      style={{ width: slot.fill }}
-                    />
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                    <span>Tỉ lệ mưa</span>
-                    <span>{slot.rain}</span>
-                  </div>
+                {/* iOS Bento Grid: Air & Environmental Metrics */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <UVWidget uvIndex={weatherData.current.uvIndex} />
+                  <WindWidget
+                    windSpeed={weatherData.current.windSpeed}
+                    windDirection={weatherData.current.windDirection}
+                  />
+                  <SunWidget
+                    sunrise={weatherData.daily[0]?.sunrise || '05:45'}
+                    sunset={weatherData.daily[0]?.sunset || '17:58'}
+                  />
+                  <HumidityWidget
+                    humidity={weatherData.current.relativeHumidity}
+                    dewPoint={weatherData.current.dewPoint}
+                  />
                 </div>
-              ))}
-            </div>
-          </article>
 
-          <article className="rounded-[2rem] border border-white/70 bg-white/75 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-slate-500">
-                  Bảy ngày tới
-                </p>
-                <h2 className="mt-2 font-display text-2xl text-slate-950">
-                  Xu hướng tuần
-                </h2>
+                {/* Visibility & Atmospheric Pressure */}
+                <AtmosphereWidget
+                  visibilityKm={weatherData.current.visibilityKm}
+                  pressureHpa={weatherData.current.surfacePressure}
+                />
+
+                {/* Rain & Precipitation */}
+                <PrecipitationWidget
+                  precipitationMm={weatherData.daily[0]?.precipitationSum ?? 0}
+                  rainProbabilityMax={
+                    weatherData.daily[0]?.precipitationProbability ?? 0
+                  }
+                />
               </div>
 
-              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
-                Độ tin cậy cao
-              </span>
-            </div>
+              {/* Right Column: 7-Day Forecast */}
+              <div className="flex flex-col gap-6">
+                <DailyForecastCard
+                  daily={weatherData.daily}
+                  weekMinTemp={weatherData.weekMinTemp}
+                  weekMaxTemp={weatherData.weekMaxTemp}
+                  currentTemp={weatherData.current.temperature}
+                  unit={unit}
+                />
 
-            <div className="mt-6 space-y-3">
-              {dailyForecast.map((day) => (
-                <div
-                  key={day.day}
-                  className="grid grid-cols-[3rem_1fr_auto] items-center gap-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3"
-                >
-                  <div className="font-display text-xl text-slate-900">
-                    {day.day}
+                {/* iOS Air Quality & Comfort Insight Card */}
+                <div className="rounded-[2rem] border border-white/20 bg-white/15 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur-2xl">
+                  <div className="flex items-center gap-2 text-white/70">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+                      Đánh giá tổng quan
+                    </span>
                   </div>
-
-                  <div>
-                    <p className="font-medium text-slate-900">{day.summary}</p>
-                    <p className="text-sm text-slate-500">{day.note}</p>
-                  </div>
-
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-sm text-slate-500">{day.low}</span>
-                    <span className="font-display text-xl text-slate-950">
-                      {day.high}
+                  <h3 className="mt-3 font-display text-xl font-semibold text-white">
+                    {weatherData.condition.label}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-white/85">
+                    {weatherData.condition.description}. Độ ẩm không khí ở mức{' '}
+                    {weatherData.current.relativeHumidity}%, gió thổi với tốc độ{' '}
+                    {Math.round(weatherData.current.windSpeed)} km/h. Thích hợp cho các kế hoạch sinh hoạt và di chuyển.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full bg-white/20 px-3 py-1 font-medium backdrop-blur-md">
+                      Tầm nhìn: {weatherData.current.visibilityKm} km
+                    </span>
+                    <span className="rounded-full bg-white/20 px-3 py-1 font-medium backdrop-blur-md">
+                      Áp suất: {weatherData.current.surfacePressure} hPa
+                    </span>
+                    <span className="rounded-full bg-white/20 px-3 py-1 font-medium backdrop-blur-md">
+                      Cập nhật: {weatherData.lastUpdated}
                     </span>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          </article>
-        </section>
+          </>
+        ) : null}
 
-        <footer className="mt-6 rounded-[1.5rem] border border-white/70 bg-white/70 px-5 py-4 text-sm text-slate-600 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-          Khung này đã sẵn sàng để nối dữ liệu thật, thêm dự báo theo vị trí và mở rộng thành phiên bản phát hành.
+        {/* Apple iOS Clean Footer */}
+        <footer className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 text-xs text-white/70 backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            <span>Thời tiết trực tuyến thời gian thực</span>
+          </div>
+          <div>
+            Dữ liệu cung cấp bởi Open-Meteo • Thiết kế phong cách Apple iOS
+          </div>
         </footer>
       </div>
     </main>

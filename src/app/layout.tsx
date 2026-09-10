@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
@@ -20,12 +20,25 @@ const codeFont = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "WeatherForecast",
+    default: "WeatherForecast - Dự báo Thời tiết Chuẩn iOS",
     template: "%s | WeatherForecast",
   },
-  description: "Bộ khung web dự báo thời tiết cơ bản, sẵn sàng cho bản phát hành đầu.",
+  description: "Ứng dụng dự báo thời tiết thời gian thực phong cách Apple iOS mượt mà, chính xác và đầy đủ các chỉ số khí quyển.",
   applicationName: "WeatherForecast",
-  keywords: ["weather", "forecast", "dự báo thời tiết"],
+  keywords: ["weather", "forecast", "dự báo thời tiết", "thời tiết việt nam", "ios weather"],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "WeatherForecast",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0284c7",
 };
 
 export default function RootLayout({
@@ -38,7 +51,7 @@ export default function RootLayout({
       lang="vi"
       className={`${bodyFont.variable} ${headingFont.variable} ${codeFont.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full selection:bg-sky-400/30 selection:text-white">{children}</body>
     </html>
   );
 }
